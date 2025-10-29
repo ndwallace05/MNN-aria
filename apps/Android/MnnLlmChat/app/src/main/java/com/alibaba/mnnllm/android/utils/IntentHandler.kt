@@ -13,17 +13,12 @@ import java.util.Date
 
 class IntentHandler(private val context: Context) {
 
-    private fun sanitize(input: String): String {
-        // Basic sanitization: remove special characters that could be used in injection attacks
-        return input.replace(Regex("[^a-zA-Z0-9\\s@.-]"), "")
-    }
-
     fun sendEmail(recipient: String, subject: String, message: String) {
         val intent = Intent(Intent.ACTION_SENDTO).apply {
             data = Uri.parse("mailto:")
-            putExtra(Intent.EXTRA_EMAIL, arrayOf(sanitize(recipient)))
-            putExtra(Intent.EXTRA_SUBJECT, sanitize(subject))
-            putExtra(Intent.EXTRA_TEXT, sanitize(message))
+            putExtra(Intent.EXTRA_EMAIL, arrayOf(recipient))
+            putExtra(Intent.EXTRA_SUBJECT, subject)
+            putExtra(Intent.EXTRA_TEXT, message)
         }
         if (intent.resolveActivity(context.packageManager) != null) {
             context.startActivity(intent)
@@ -36,8 +31,8 @@ class IntentHandler(private val context: Context) {
         if (beginTime != null && endTime != null) {
             val intent = Intent(Intent.ACTION_INSERT).apply {
                 data = CalendarContract.Events.CONTENT_URI
-                putExtra(CalendarContract.Events.TITLE, sanitize(title))
-                putExtra(CalendarContract.Events.EVENT_LOCATION, sanitize(location))
+                putExtra(CalendarContract.Events.TITLE, title)
+                putExtra(CalendarContract.Events.EVENT_LOCATION, location)
                 putExtra(CalendarContract.EXTRA_EVENT_BEGIN_TIME, beginTime.time)
                 putExtra(CalendarContract.EXTRA_EVENT_END_TIME, endTime.time)
             }
@@ -68,8 +63,8 @@ class IntentHandler(private val context: Context) {
     fun createTaskWithReminder(title: String, notes: String, minutes: Int) {
         val intent = Intent(Intent.ACTION_INSERT).apply {
             data = CalendarContract.Events.CONTENT_URI
-            putExtra(CalendarContract.Events.TITLE, sanitize(title))
-            putExtra(CalendarContract.Events.DESCRIPTION, sanitize(notes))
+            putExtra(CalendarContract.Events.TITLE, title)
+            putExtra(CalendarContract.Events.DESCRIPTION, notes)
             putExtra(CalendarContract.Events.RRULE, "FREQ=DAILY;COUNT=1")
             putExtra(CalendarContract.EXTRA_EVENT_ALL_DAY, false)
             // Add reminder using the minutes parameter
