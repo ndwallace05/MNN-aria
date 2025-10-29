@@ -398,9 +398,14 @@ class ChatInputComponent(
             }
             taskRegex.containsMatchIn(text) -> {
                 val matchResult = taskRegex.find(text)!!
-                val (title, notes, minutes) = matchResult.destructured
-                intentHandler.createTaskWithReminder(title, notes, minutes.toInt())
-                true
+                val (title, notes, minutesString) = matchResult.destructured
+                val minutes = minutesString.toIntOrNull()
+                if (minutes != null) {
+                    intentHandler.createTaskWithReminder(title, notes, minutes)
+                    true
+                } else {
+                    false
+                }
             }
             else -> false
         }
