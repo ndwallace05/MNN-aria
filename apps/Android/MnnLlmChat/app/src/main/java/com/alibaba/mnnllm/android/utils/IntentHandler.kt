@@ -43,7 +43,8 @@ class IntentHandler(private val context: Context) {
     }
 
     private fun parseDateTime(dateTimeString: String): Date? {
-        val format = SimpleDateFormat("yyyy-MM-dd HH:mm")
+        // SimpleDateFormat is not thread-safe, but this local instance is safe.
+        val format = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.US)
         return try {
             format.parse(dateTimeString)
         } catch (e: Exception) {
@@ -66,6 +67,9 @@ class IntentHandler(private val context: Context) {
             putExtra(CalendarContract.Events.DESCRIPTION, notes)
             putExtra(CalendarContract.Events.RRULE, "FREQ=DAILY;COUNT=1")
             putExtra(CalendarContract.EXTRA_EVENT_ALL_DAY, false)
+            // Add reminder using the minutes parameter
+            putExtra(CalendarContract.Reminders.MINUTES, minutes)
+            putExtra(CalendarContract.Reminders.METHOD, CalendarContract.Reminders.METHOD_ALERT)
         }
         if (intent.resolveActivity(context.packageManager) != null) {
             context.startActivity(intent)
