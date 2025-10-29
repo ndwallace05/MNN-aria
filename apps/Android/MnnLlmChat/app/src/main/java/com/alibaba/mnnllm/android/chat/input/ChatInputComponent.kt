@@ -23,6 +23,7 @@ import com.alibaba.mnnllm.android.chat.chatlist.ChatViewHolders
 import com.alibaba.mnnllm.android.chat.model.ChatDataItem
 import com.alibaba.mnnllm.android.databinding.ActivityChatBinding
 import com.alibaba.mnnllm.android.llm.LlmSession
+import com.alibaba.mnnllm.android.utils.IntentHandler
 import com.alibaba.mnnllm.android.utils.KeyboardUtils
 import com.alibaba.mnnllm.android.model.ModelTypeUtils
 import com.alibaba.mnnllm.android.utils.Permissions.REQUEST_RECORD_AUDIO_PERMISSION
@@ -36,6 +37,7 @@ class ChatInputComponent(
     modelId:String,
     modelName: String,
 ) {
+    private val intentHandler: IntentHandler = IntentHandler(chatActivity)
     private var currentModelId: String = modelId
     private var currentModelName: String = modelName
     private var onStopGenerating: (() -> Unit)? = null
@@ -150,7 +152,13 @@ class ChatInputComponent(
         if (chatActivity.isGenerating) {
             this.onStopGenerating?.invoke()
         } else {
-            sendUserMessage()
+            val inputString = editUserMessage.text.toString().trim { it <= ' ' }
+            if (handleIntent(inputString)) {
+                editUserMessage.setText("")
+                KeyboardUtils.hideKeyboard(editUserMessage)
+            } else {
+                sendUserMessage()
+            }
         }
     }
 
@@ -363,4 +371,38 @@ class ChatInputComponent(
         this.onStopGenerating = onStopGenerating
     }
 
+    private fun handleIntent(text: String): Boolean {
+        val emailRegex = "email to\\s+(.+?)\\s+subject\\s+(.+?)\\s+message\\s+(.+)".toRegex()
+        val calendarRegex = "create calendar event title\\s+(.+?)\\s+location\\s+(.+?)\\s+beginTime\\s+(.+?)\\s+endTime\\s+(.+)".toRegex()
+        val searchRegex = "search for\\s+(.+)".toRegex()
+        val taskRegex = "create task with reminder title\\s+(.+?)\\s+notes\\s+(.+?)\\s+minutes\\s+(.+)".toRegex()
+
+        return when {
+            emailRegex.containsMatchIn(text) -> {
+                val matchResult = emailRegex.find(text)!!
+                val (recipient, subject, message) = matchResult.destructured
+                intentHandler.sendEmail(recipient, subject, message)
+                true
+            }
+            calendarRegex.containsMatchIn(text) -> {
+                val matchResult = calendarRegex.find(text)!!
+                val (title, location, beginTime, endTime) = matchResult.destructured
+                intentHandler.createCalendarEvent(title, location, beginTime, endTime)
+                true
+            }
+            searchRegex.containsMatchIn(text) -> {
+                val matchResult = searchRegex.find(text)!!
+                val (query) = matchResult.destructured
+                intentHandler.openWebPage("https://www.google.com/search?q=$query")
+                true
+            }
+            taskRegex.containsMatchIn(text) -> {
+                val matchResult = taskRegex.find(text)!!
+                val (title, notes, minutes) = matchResult.destructured
+                intentHandler.createTaskWithReminder(title, notes, minutes.toInt())
+                true
+            }
+            else -> false
+        }
+    }
 }
